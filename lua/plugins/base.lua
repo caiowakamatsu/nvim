@@ -33,6 +33,32 @@ return {
 			local builtin = require('telescope.builtin')
 			vim.keymap.set("n", "<leader>f", builtin.find_files, { desc = "Telescope find files" })
 		end,
-	}
+	},
 
+	{
+		"nvim-lualine/lualine.nvim",
+		config = function()
+			require("lualine").setup()
+		end,
+	},
+
+	{
+		"windwp/nvim-autopairs",
+		config = function()
+			require("nvim-autopairs").setup()
+		end,
+	},
+
+	{
+		"neovim/nvim-lspconfig",
+	},
+
+	{
+		"hrsh7th/nvim-cmp",
+		dependencies = {
+		  "hrsh7th/cmp-nvim-lsp",
+			"L3MON4D3/LuaSnip",
+			"saadparwaiz1/cmp_luasnip",
+		},
+	}
 }

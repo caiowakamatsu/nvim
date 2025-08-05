@@ -14,3 +14,29 @@ vim.opt.autoindent = true
 
 vim.g.mapleader = " "
 
+-- Setup the LSP stuff
+local cmp = require("cmp")
+local luasnip = require("luasnip")
+
+cmp.setup({
+	snippet = {
+		expand = function(args)
+			luasnip.lsp_expand(args.body)
+		end,
+	},
+	mapping = cmp.mapping.preset.insert({
+		["<C-space>"] = cmp.mapping.complete(),
+		["<CR>"] = cmp.mapping.confirm({ select = true }),
+	}),
+	sources = {
+		{ name = "nvim_lsp" },
+		{ name = "luasnip" },
+	}
+})
+
+local caps = require("cmp_nvim_lsp").default_capabilities()
+
+require("lspconfig").clangd.setup({
+	capabilities = caps
+})
+
