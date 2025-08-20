@@ -146,3 +146,13 @@ vim.api.nvim_create_user_command("Build", function(opts)
   nargs = 1,
 })
 
+vim.api.nvim_create_autocmd({ "BufWritePre" }, {
+	group = vim.api.nvim_create_augroup("ClangFormat", { clear = true }),
+	pattern = { "*.cpp", "*.cxx", "*.cc", "*.c++", "*.hpp", "*.h", ".hxx" },
+	callback = function()
+		if vim.fn.executable("clang-format") == 1 then
+			vim.cmd("silent !clang-format -i %")
+			vim.cmd("e")
+		end
+	end,
+})
