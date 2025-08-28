@@ -5,9 +5,19 @@ return {
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
       -- load the colorscheme here
-      vim.cmd([[colorscheme tokyonight]])
+			vim.cmd([[colorscheme tokyonight]])
     end,
   },
+
+	{
+		"nyoom-engineering/oxocarbon.nvim",
+		lazy = false,
+		priority = 1001,
+		config = function()
+			--vim.opt.background = "light"
+			--vim.cmd([[colorscheme oxocarbon]])
+		end,
+	},
 
 	{
 		"nvim-treesitter/nvim-treesitter",

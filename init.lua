@@ -36,11 +36,45 @@ cmp.setup({
 
 local caps = require("cmp_nvim_lsp").default_capabilities()
 
+local on_attach = function(client, bufnr)
+  local opts = { noremap=true, silent=true, buffer=bufnr }
+  vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+  vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+end
+
 require("lspconfig").clangd.setup({
 	cmd = { "clangd", "--compile-commands-dir=build" },	
 	capabilities = caps,
 	on_attach = on_attach,
 })
+require("lspconfig").rust_analyzer.setup({
+  -- Add any specific rust-analyzer options here.
+  -- For example, you might want to enable inlay hints:
+  settings = {
+    ["rust-analyzer"] = {
+      inlayHints = {
+        parameterHints = {
+          enable = true,
+        },
+        typeHints = {
+          enable = true,
+        },
+      },
+    },
+  },
+  capabilities = caps,
+  on_attach = on_attach,
+})
+require("lspconfig").ts_ls.setup({
+  capabilities = caps,    -- same caps from cmp_nvim_lsp
+  on_attach = on_attach,  -- your existing on_attach function
+  filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "typescript.tsx" },
+  cmd = { "typescript-language-server", "--stdio" },  -- make sure you installed it
+})
+
+--require("lspconfig").pyright.setup({
+--	capabilities = caps
+--})
 
 local notify = require("notify")
 
@@ -151,8 +185,7 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 	pattern = { "*.cpp", "*.cxx", "*.cc", "*.c++", "*.hpp", "*.h", ".hxx" },
 	callback = function()
 		if vim.fn.executable("clang-format") == 1 then
-			vim.cmd("silent !clang-format -i %")
-			vim.cmd("e")
+			vim.lsp.buf.format({ async = false })
 		end
 	end,
 })
