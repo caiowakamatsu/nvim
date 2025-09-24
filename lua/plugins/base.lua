@@ -5,7 +5,7 @@ return {
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
       -- load the colorscheme here
-			vim.cmd([[colorscheme tokyonight]])
+			-- vim.cmd([[colorscheme tokyonight]])
     end,
   },
 
@@ -16,6 +16,26 @@ return {
 		config = function()
 			--vim.opt.background = "light"
 			--vim.cmd([[colorscheme oxocarbon]])
+		end,
+	},
+
+	{
+    "tiagovla/tokyodark.nvim",
+    opts = {
+        -- custom options here
+    },
+    config = function(_, opts)
+        require("tokyodark").setup(opts) -- calling setup is optional
+        vim.cmd [[colorscheme tokyodark]]
+    end,
+	},
+
+	{
+		"kdheepak/monochrome.nvim",
+		lazy = false,
+		priority = 1002,
+		config = function()
+--			vim.cmd([[colorscheme monochrome]])
 		end,
 	},
 

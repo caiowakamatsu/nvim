@@ -12,7 +12,15 @@ vim.opt.cursorline = true
 vim.opt.scrolloff = 8
 vim.opt.autoindent = true
 
+vim.g.equalalways = false
+
 vim.g.mapleader = " "
+
+-- terminal mode is annoying :/
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { silent = true })
+
+-- use zsh
+vim.opt.shell = "/usr/bin/zsh"
 
 -- Setup the LSP stuff
 local cmp = require("cmp")
@@ -42,39 +50,55 @@ local on_attach = function(client, bufnr)
   vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
 end
 
-require("lspconfig").clangd.setup({
-	cmd = { "clangd", "--compile-commands-dir=build" },	
-	capabilities = caps,
-	on_attach = on_attach,
+-- clangd
+vim.lsp.config("clangd", {
+  cmd = { "clangd", "--compile-commands-dir=build" },
+  capabilities = caps,
+  on_attach = on_attach,
 })
-require("lspconfig").rust_analyzer.setup({
-  -- Add any specific rust-analyzer options here.
-  -- For example, you might want to enable inlay hints:
+vim.lsp.enable("clangd")
+
+-- rust-analyzer
+vim.lsp.config("rust_analyzer", {
   settings = {
     ["rust-analyzer"] = {
       inlayHints = {
-        parameterHints = {
-          enable = true,
-        },
-        typeHints = {
-          enable = true,
-        },
+        parameterHints = { enable = true },
+        typeHints = { enable = true },
       },
     },
   },
   capabilities = caps,
   on_attach = on_attach,
 })
-require("lspconfig").ts_ls.setup({
-  capabilities = caps,    -- same caps from cmp_nvim_lsp
-  on_attach = on_attach,  -- your existing on_attach function
-  filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "typescript.tsx" },
-  cmd = { "typescript-language-server", "--stdio" },  -- make sure you installed it
-})
+vim.lsp.enable("rust_analyzer")
 
---require("lspconfig").pyright.setup({
---	capabilities = caps
---})
+-- typescript
+vim.lsp.config("ts_ls", {
+  capabilities = caps,
+  on_attach = on_attach,
+  filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "typescript.tsx" },
+  cmd = { "typescript-language-server", "--stdio" },
+})
+vim.lsp.enable("ts_ls")
+
+-- gopls
+vim.lsp.config("gopls", {
+  settings = {
+    gopls = {
+      gofumpt = true,
+      staticcheck = true,
+    },
+  },
+  capabilities = caps,
+  on_attach = on_attach,
+})
+vim.lsp.enable("gopls")
+
+-- pyright
+vim.lsp.config("pyright", {
+	capabilities = caps,
+})
 
 local notify = require("notify")
 
@@ -146,6 +170,40 @@ vim.keymap.set("n", "<leader>cr", function()
   vim.api.nvim_buf_set_keymap(buf, "n", "q", "<cmd>bd!<CR>", { silent = true, noremap = true })
 end, { desc = "Configure CMake Release Build in floating terminal" })
 
+vim.keymap.set("n", "<leader>cp", function()
+  local buf = vim.api.nvim_create_buf(false, true)
+
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.5)
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local opts = {
+    style = "minimal",
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    border = "rounded",
+  }
+
+  vim.api.nvim_open_win(buf, true, opts)
+
+  vim.fn.termopen("mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..", {
+    on_stdout = function(_, _, _)
+      local win = vim.api.nvim_get_current_win()
+      vim.api.nvim_win_set_cursor(win, {vim.api.nvim_buf_line_count(0), 0})
+    end,
+    on_stderr = function(_, _, _)
+      local win = vim.api.nvim_get_current_win()
+      vim.api.nvim_win_set_cursor(win, {vim.api.nvim_buf_line_count(0), 0})
+    end,
+  })
+
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", "<cmd>bd!<CR>", { silent = true, noremap = true })
+end, { desc = "Configure CMake RelWithDebugInfo Build in floating terminal" })
+
 vim.api.nvim_create_user_command("Build", function(opts)
   local target = opts.args
   if target == "" then
@@ -164,7 +222,7 @@ vim.api.nvim_create_user_command("Build", function(opts)
 		border = 'single',
 	})
 
-  vim.fn.termopen("cmake --build build --parallel --target " .. target, {
+  vim.fn.termopen("cmake --build build --parallel 20 --target " .. target, {
     on_stdout = function(_, _, _)
       local win = vim.api.nvim_get_current_win()
       vim.api.nvim_win_set_cursor(win, {vim.api.nvim_buf_line_count(0), 0})
@@ -180,12 +238,19 @@ vim.api.nvim_create_user_command("Build", function(opts)
   nargs = 1,
 })
 
-vim.api.nvim_create_autocmd({ "BufWritePre" }, {
-	group = vim.api.nvim_create_augroup("ClangFormat", { clear = true }),
-	pattern = { "*.cpp", "*.cxx", "*.cc", "*.c++", "*.hpp", "*.h", ".hxx" },
-	callback = function()
-		if vim.fn.executable("clang-format") == 1 then
-			vim.lsp.buf.format({ async = false })
-		end
-	end,
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = vim.api.nvim_create_augroup("AutoFormatOnSave", { clear = true }),
+  pattern = "*",
+  callback = function()
+    vim.lsp.buf.format({ async = false })
+  end,
 })
+
+vim.keymap.set('n', '<leader>cs', function()
+  require('telescope.builtin').colorscheme({
+    enable_preview = true  -- live preview
+  })
+end, { desc = "Pick a colorscheme" })
+
+vim.keymap.set("n", "<leader>r", "<cmd>Telescope live_grep<cr>", { noremap = true, silent = true })
+
